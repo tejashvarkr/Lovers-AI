@@ -3,6 +3,7 @@ import Header from './components/Header';
 import HomePage from './components/HomePage';
 import PricingPage from './components/PricingPage';
 import ContactPage from './components/ContactPage';
+import PaymentPage from './components/PaymentPage';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -18,6 +19,7 @@ function App() {
       {currentPage === 'home' && <HomePage onNavigate={handleNavigate} />}
       {currentPage === 'pricing' && <PricingPage onNavigate={handleNavigate} />}
       {currentPage === 'contact' && <ContactPage />}
+      {currentPage === 'payment' && <PaymentPage onNavigate={handleNavigate} />}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, X, Star, Users, Zap,Building2 } from 'lucide-react';
+import { Check, X, Star, Users, Zap, Building2, CheckCircle } from 'lucide-react';
 
 interface PricingPageProps {
   onNavigate: (page: string) => void;
@@ -204,7 +204,22 @@ const testimonials = [
 
 export default function PricingPage({ onNavigate }: PricingPageProps) {
   const [isYearly, setIsYearly] = useState(false);
-  const [selectedPlan] = useState<string | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [creditsRemaining, setCreditsRemaining] = useState(0);
+
+  React.useEffect(() => {
+    // Check if payment was successful
+    const paymentSuccessful = localStorage.getItem('paymentSuccess');
+    const plan = localStorage.getItem('selectedPlan');
+    const credits = localStorage.getItem('creditsRemaining');
+    
+    if (paymentSuccessful === 'true' && plan) {
+      setPaymentSuccess(true);
+      setSelectedPlan(plan);
+      setCreditsRemaining(parseInt(credits || '0'));
+    }
+  }, []);
 
   const renderStars = (rating: number) => {
     return (
@@ -225,12 +240,23 @@ export default function PricingPage({ onNavigate }: PricingPageProps) {
     if (isEnterprise) {
       onNavigate('contact');
     } else if (planName === 'Free') {
-      onNavigate('home');
+      setSelectedPlan(planName);
+      localStorage.setItem('selectedPlan', planName);
+      localStorage.setItem('paymentSuccess', 'true');
+      localStorage.setItem('creditsRemaining', '0');
+      setPaymentSuccess(true);
+      setCreditsRemaining(0);
     } else {
-       onNavigate(`payment?plan=${planName}`);
+      window.location.href = `?plan=${planName}`;
+      onNavigate('payment');
     }
   };
 
+  const handleTopUpSelect = (type: 'subscriber' | 'nonsubscriber') => {
+    const planName = type === 'subscriber' ? 'TopUp-Subscriber' : 'TopUp-NonSubscriber';
+    window.location.href = `?plan=${planName}`;
+    onNavigate('payment');
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-white">
       {/* Hero Section */}
@@ -353,21 +379,36 @@ export default function PricingPage({ onNavigate }: PricingPageProps) {
 
                   {/* Button */}
                   <div className="mt-auto">
-                   <button 
-  onClick={() => handlePlanSelect(tier.name, tier.isEnterprise)}
-  className={`w-full min-h-[48px] py-3 px-4 rounded-xl font-semibold transition-all duration-200
-    ${selectedPlan === tier.name
-      ? 'bg-green-600 text-white'
-      : tier.highlighted
-      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg hover:scale-105'
-      : tier.status === 'Inactive'
-      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-      : 'bg-gray-900 text-white hover:bg-gray-800 hover:shadow-lg'
-    }`}
-  disabled={tier.status === 'Inactive'}
->
-  {selectedPlan === tier.name ? 'Selected' : tier.buttonText}
-</button>
+                    <button 
+                      onClick={() => handlePlanSelect(tier.name, tier.isEnterprise)}
+                      className={`w-full min-h-[48px] py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2
+                        ${selectedPlan === tier.name && paymentSuccess
+                          ? 'bg-green-600 text-white'
+                          : tier.highlighted
+                          ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg hover:scale-105'
+                          : tier.status === 'Inactive'
+                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          : 'bg-gray-900 text-white hover:bg-gray-800 hover:shadow-lg'
+                        }`}
+                      disabled={tier.status === 'Inactive'}
+                    >
+                      {selectedPlan === tier.name && paymentSuccess ? (
+                        <>
+                          <CheckCircle className="w-5 h-5" />
+                          <span>Active</span>
+                        </>
+                      ) : (
+                        <span>{tier.buttonText}</span>
+                      )}
+                    </button>
+                    
+                    {selectedPlan === tier.name && paymentSuccess && (
+                      <div className="mt-3 text-center">
+                        <p className="text-sm text-green-600 font-medium">
+                          Credits Remaining: {creditsRemaining}
+                        </p>
+                      </div>
+                    )}
 
                   </div>
                 </div>
@@ -377,46 +418,71 @@ export default function PricingPage({ onNavigate }: PricingPageProps) {
         </div>
       </section>
       {/* Top-Up Pricing Table */}
-<section className="py-20 bg-white px-4 sm:px-6 lg:px-8">
-  <div className="max-w-5xl mx-auto">
-    <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-      Top-Up Pricing
-    </h2>
-    <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-      <table className="w-full">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="py-4 px-6 text-left font-semibold text-gray-900">Features</th>
-            <th className="py-4 px-6 text-center font-semibold text-gray-900">Subscribers</th>
-            <th className="py-4 px-6 text-center font-semibold text-gray-900">Non-Subscribers</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          <tr>
-            <td className="py-4 px-6">Credits per top-up</td>
-            <td className="text-center">10</td>
-            <td className="text-center">10</td>
-          </tr>
-          <tr>
-            <td className="py-4 px-6">Cost per credit</td>
-            <td className="text-center">₹1.30</td>
-            <td className="text-center">₹1.70</td>
-          </tr>
-          <tr>
-            <td className="py-4 px-6">Top-up price</td>
-            <td className="text-center">₹13</td>
-            <td className="text-center">₹17</td>
-          </tr>
-          <tr>
-            <td className="py-4 px-6">Quality</td>
-            <td className="text-center">Standard</td>
-            <td className="text-center">Standard</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
+      <section className="py-20 bg-white px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+            Top-Up Pricing
+          </h2>
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="py-4 px-6 text-left font-semibold text-gray-900">Features</th>
+                  <th className="py-4 px-6 text-center font-semibold text-gray-900">Subscribers</th>
+                  <th className="py-4 px-6 text-center font-semibold text-gray-900">Non-Subscribers</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                <tr>
+                  <td className="py-4 px-6">Credits per top-up</td>
+                  <td className="text-center">10</td>
+                  <td className="text-center">10</td>
+                </tr>
+                <tr>
+                  <td className="py-4 px-6">Cost per credit</td>
+                  <td className="text-center">₹1.30</td>
+                  <td className="text-center">₹1.70</td>
+                </tr>
+                <tr>
+                  <td className="py-4 px-6">Top-up price</td>
+                  <td className="text-center">₹13</td>
+                  <td className="text-center">₹17</td>
+                </tr>
+                <tr>
+                  <td className="py-4 px-6">Quality</td>
+                  <td className="text-center">Standard</td>
+                  <td className="text-center">Standard</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Top-Up Buttons */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">For Subscribers</h3>
+              <p className="text-gray-600 mb-4">Get additional credits at a discounted rate</p>
+              <button
+                onClick={() => handleTopUpSelect('subscriber')}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
+              >
+                Buy Top-Up - ₹13
+              </button>
+            </div>
+            
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">For Non-Subscribers</h3>
+              <p className="text-gray-600 mb-4">Purchase additional credits without a subscription</p>
+              <button
+                onClick={() => handleTopUpSelect('nonsubscriber')}
+                className="w-full bg-gray-900 text-white py-3 px-4 rounded-lg font-semibold hover:bg-gray-800 hover:shadow-lg transition-all duration-200"
+              >
+                Buy Top-Up - ₹17
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Feature Comparison Table */}
       <section className="py-20 bg-white/80 px-4 sm:px-6 lg:px-8">
